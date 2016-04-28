@@ -4,7 +4,7 @@ var mysql = require('mysql');
 // create a connection to our Cloud9 server
 var connection = mysql.createConnection({
   host     : 'localhost',
-  user     : 'ziad_saab', // CHANGE THIS :)
+  user     : 'molecularcode',
   password : '',
   database: 'reddit'
 });

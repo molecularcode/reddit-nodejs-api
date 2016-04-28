@@ -16,9 +16,7 @@ module.exports = function RedditAPI(conn) {
             function(err, result) {
               if (err) {
                 /*
-                There can be many reasons why a MySQL query could fail. While many of
-                them are unknown, there's a particular error about unique usernames
-                which we can be more explicit about!
+                There can be many reasons why a MySQL query could fail. While many of them are unknown, there's a particular error about unique usernames which we can be more explicit about!
                 */
                 if (err.code === 'ER_DUP_ENTRY') {
                   callback(new Error('A user with this username already exists'));
@@ -29,9 +27,7 @@ module.exports = function RedditAPI(conn) {
               }
               else {
                 /*
-                Here we are INSERTing data, so the only useful thing we get back
-                is the ID of the newly inserted row. Let's use it to find the user
-                and return it
+                Here we are INSERTing data, so the only useful thing we get back is the ID of the newly inserted row. Let's use it to find the user and return it
                 */
                 conn.query(
                   'SELECT `id`, `username`, `createdAt`, `updatedAt` FROM `users` WHERE `id` = ?', [result.insertId],
@@ -67,8 +63,7 @@ module.exports = function RedditAPI(conn) {
           }
           else {
             /*
-            Post inserted successfully. Let's use the result.insertId to retrieve
-            the post and send it to the caller!
+            Post inserted successfully. Let's use the result.insertId to retrieve the post and send it to the caller!
             */
             conn.query(
               'SELECT `id`,`title`,`url`,`userId`, `createdAt`, `updatedAt` FROM `posts` WHERE `id` = ?', [result.insertId],
@@ -110,5 +105,5 @@ module.exports = function RedditAPI(conn) {
         }
       );
     }
-  }
-}
+  };
+};

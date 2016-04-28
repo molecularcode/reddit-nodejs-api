@@ -1,5 +1,4 @@
--- This creates the users table. The username field is constrained to unique
--- values only, by using a UNIQUE KEY on that column
+-- This creates the users table. The username field is constrained to unique values only, by using a UNIQUE KEY on that column
 CREATE TABLE `users` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(50) NOT NULL,
@@ -10,8 +9,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- This creates the posts table. The userId column references the id column of
--- users. If a user is deleted, the corresponding posts' userIds will be set NULL.
+-- This creates the posts table. The userId column references the id column of users. If a user is deleted, the corresponding posts' userIds will be set NULL.
 CREATE TABLE `posts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(300) DEFAULT NULL,
