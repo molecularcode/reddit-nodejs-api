@@ -49,8 +49,19 @@ var redditAPI = reddit(connection);
 // });
 
 
-// Get all posts for a given user
-redditAPI.getAllPostsForUser(11, {numPerPage:25, page:0}, function(err, result) {
+// Get all posts for a given user by userId
+// redditAPI.getAllPostsForUser(11, {numPerPage:25, page:0}, function(err, result) {
+//   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     console.log(result);
+//   }
+// });
+
+
+// Get a single post by postId
+redditAPI.getSinglePost(4, function(err, result) {
   if (err) {
     console.log(err);
   }

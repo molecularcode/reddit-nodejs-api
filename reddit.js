@@ -131,11 +131,12 @@ module.exports = function RedditAPI(conn) {
       }
       var limit = options.numPerPage || 25; // if options.numPerPage is "falsy" then use 25
       var offset = (options.page || 0) * limit;
-      
+
       // If a userId is not provided, terminate the function
       if (typeof userId !== "number") {
         callback("Please enter a valid user ID");
-      } else {
+      }
+      else {
 
         conn.query(`
           SELECT p.id AS pId, title AS pTitle, url AS pURL, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
@@ -149,7 +150,7 @@ module.exports = function RedditAPI(conn) {
               callback(err);
             }
             else {
-              var singleUserPosts = results.map(function(results){ 
+              var singleUserPosts = results.map(function(results) {
                 var psuObj = {
                   "id": results.pId,
                   "title": results.pTitle,
@@ -165,14 +166,50 @@ module.exports = function RedditAPI(conn) {
                     "updatedAt": results.userUpdatedAt
                   }
                 };
-                callback(psuObj);
+                return psuObj;
               });
               callback(null, singleUserPosts);
             }
           }
-        
-      );
+        );
       }
+    },
+    getSinglePost: function(postId, callback) {
+      // If a postId is not provided, terminate the function
+      if (typeof postId !== "number") {
+          callback("Please enter a valid post ID");
+        }
+    
+      conn.query(`
+        SELECT p.id AS pId, title AS pTitle, url AS pURL, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
+        FROM posts AS p
+        JOIN users AS u ON u.id = p.userId AND p.id = ?
+        ORDER BY p.createdAt DESC
+        `, [postId],
+        function(err, results) {
+          if (err) {
+            callback(err);
+          }
+          else {
+            var post = {
+              "id": results[0].pId,
+              "title": results[0].pTitle,
+              "url": results[0].pURL,
+              "userId": results[0].pUserId,
+              "createdAt": results[0].pCreatedAt,
+              "updatedAt": results[0].pUpdatedAt,
+              "user": {
+                "id": results[0].uId,
+                "username": results[0].uUsername,
+                "password": results[0].uPwd,
+                "createdAt": results[0].userCreatedAt,
+                "updatedAt": results[0].userUpdatedAt
+              }
+            };
+            callback(null, post);
+          }
+        }
+      );
     }
   };
 };
