@@ -13,9 +13,9 @@ var connection = mysql.createConnection({
 var reddit = require('./reddit');
 var redditAPI = reddit(connection);
 
-// Create user and new post
+//Create user and new post
 // redditAPI.createUser({
-//   username: 'hello1',
+//   username: 'hello5',
 //   password: 'xxx'
 // }, function(err, user) {
 //   if (err) {
@@ -25,7 +25,8 @@ var redditAPI = reddit(connection);
 //     redditAPI.createPost({
 //       title: 'hi reddit!',
 //       url: 'https://www.reddit.com',
-//       userId: user.id
+//       userId: user.id,
+//       subredditId: 4
 //     }, function(err, post) {
 //       if (err) {
 //         console.log(err);
@@ -39,14 +40,14 @@ var redditAPI = reddit(connection);
 
 
 // Get all posts for all users
-// redditAPI.getAllPosts(function(err, result) {
-//   if (err) {
-//     console.log(err);
-//   }
-//   else {
-//     console.log(result);
-//   }
-// });
+redditAPI.getAllPosts(function(err, result) {
+  if (err) {
+    console.log(err);
+  }
+  else {
+    console.log(result);
+  }
+});
 
 
 // Get all posts for a given user by userId
@@ -82,11 +83,11 @@ var redditAPI = reddit(connection);
 // });
 
 
-redditAPI.getAllSubreddits(function(err, result) {
-  if (err) {
-    console.log(err);
-  }
-  else {
-    console.log(result);
-  }
-});
+// redditAPI.getAllSubreddits(function(err, result) {
+//   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     console.log(result);
+//   }
+// });

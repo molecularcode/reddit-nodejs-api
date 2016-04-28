@@ -56,7 +56,7 @@ module.exports = function RedditAPI(conn) {
     },
     createPost: function(post, callback) {
       conn.query(
-        'INSERT INTO `posts` (`userId`, `title`, `url`, `createdAt`) VALUES (?, ?, ?, ?)', [post.userId, post.title, post.url, null],
+        'INSERT INTO `posts` (`userId`, `title`, `url`, `createdAt`, `subredditId`) VALUES (?, ?, ?, ?, ?)', [post.userId, post.title, post.url, null, post.subredditId],
         function(err, result) {
           if (err) {
             callback(err);
@@ -64,7 +64,7 @@ module.exports = function RedditAPI(conn) {
           else {
             /* Post inserted successfully. Let's use the result.insertId to retrieve the post and send it to the caller! */
             conn.query(
-              'SELECT `id`,`title`,`url`,`userId`, `createdAt`, `updatedAt` FROM `posts` WHERE `id` = ?', [result.insertId],
+              'SELECT `id`,`title`,`url`,`userId`, `subredditId`, `createdAt`, `updatedAt` FROM `posts` WHERE `id` = ?', [result.insertId],
               function(err, result) {
                 if (err) {
                   callback(err);
@@ -88,9 +88,10 @@ module.exports = function RedditAPI(conn) {
       var offset = (options.page || 0) * limit;
 
       conn.query(`
-        SELECT p.id AS pId, title AS pTitle, url AS pURL, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
+        SELECT p.id AS pId, p.title AS pTitle, p.url AS pURL, p.userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, u.username AS uUsername, u.password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt, s.id AS sId, s.name AS sName, s.url AS sURL, s.description AS sDesc, s.createdAt AS sCreatedAt, s.updatedAt AS sUpdatedAt
         FROM posts AS p
-        JOIN users AS u ON u.id = p.userId
+        LEFT JOIN users AS u ON u.id = p.userId
+        LEFT JOIN subreddits AS s ON s.id = p.subredditId
         ORDER BY p.createdAt DESC
         LIMIT ? OFFSET ?
         `, [limit, offset],
@@ -113,6 +114,14 @@ module.exports = function RedditAPI(conn) {
                   "password": results.uPwd,
                   "createdAt": results.userCreatedAt,
                   "updatedAt": results.userUpdatedAt
+                },
+                "subreddit": {
+                  "id": results.sId,
+                  "name": results.sName,
+                  "url": results.sURL,
+                  "description": results.sDesc,
+                  "createdAt": results.sCreatedAt,
+                  "updatedAt": results.sUpdatedAt
                 }
               };
               return pObj;
