@@ -28,7 +28,6 @@ CREATE TABLE `posts` (
 CREATE TABLE `subreddits` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(30) NOT NULL,
-  `title` varchar(300) DEFAULT NULL,
   `url` varchar(2000) DEFAULT NULL,
   `description` varchar(200) DEFAULT NULL, 
   `createdAt` TIMESTAMP NOT NULL DEFAULT 0,
