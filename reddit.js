@@ -62,9 +62,7 @@ module.exports = function RedditAPI(conn) {
             callback(err);
           }
           else {
-            /*
-            Post inserted successfully. Let's use the result.insertId to retrieve the post and send it to the caller!
-            */
+            /* Post inserted successfully. Let's use the result.insertId to retrieve the post and send it to the caller! */
             conn.query(
               'SELECT `id`,`title`,`url`,`userId`, `createdAt`, `updatedAt` FROM `posts` WHERE `id` = ?', [result.insertId],
               function(err, result) {
@@ -88,11 +86,12 @@ module.exports = function RedditAPI(conn) {
       }
       var limit = options.numPerPage || 25; // if options.numPerPage is "falsy" then use 25
       var offset = (options.page || 0) * limit;
-      
+
       conn.query(`
-        SELECT \`id\`,\`title\`,\`url\`,\`userId\`, \`createdAt\`, \`updatedAt\`
-        FROM \`posts\`
-        ORDER BY \`createdAt\` DESC
+        SELECT p.id AS pId, title AS pTitle, url AS pURL, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
+        FROM posts AS p
+        JOIN users AS u ON u.id = p.userId
+        ORDER BY p.createdAt DESC
         LIMIT ? OFFSET ?
         `, [limit, offset],
         function(err, results) {
@@ -100,10 +99,80 @@ module.exports = function RedditAPI(conn) {
             callback(err);
           }
           else {
-            callback(null, results);
+            var posts = results.map(function(results){ 
+              var pObj = {
+                "id": results.pId,
+                "title": results.pTitle,
+                "url": results.pURL,
+                "userId": results.pUserId,
+                "createdAt": results.pCreatedAt,
+                "updatedAt": results.pUpdatedAt,
+                "user": {
+                  "id": results.uId,
+                  "username": results.uUsername,
+                  "password": results.uPwd,
+                  "createdAt": results.userCreatedAt,
+                  "updatedAt": results.userUpdatedAt
+                }
+              };
+              return pObj;
+            });
+            
+            callback(null, posts);
           }
         }
       );
+    },
+    getAllPostsForUser: function(userId, options, callback) {
+      // In case we are called without an options parameter, shift all the parameters manually
+      if (!callback) {
+        callback = options;
+        options = {};
+      }
+      var limit = options.numPerPage || 25; // if options.numPerPage is "falsy" then use 25
+      var offset = (options.page || 0) * limit;
+      
+      // If a userId is not provided, terminate the function
+      if (typeof userId !== "number") {
+        callback("Please enter a valid user ID");
+      } else {
+
+        conn.query(`
+          SELECT p.id AS pId, title AS pTitle, url AS pURL, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
+          FROM posts AS p
+          JOIN users AS u ON u.id = p.userId AND u.id = ?
+          ORDER BY p.createdAt DESC
+          LIMIT ? OFFSET ?
+          `, [userId, limit, offset],
+          function(err, results) {
+            if (err) {
+              callback(err);
+            }
+            else {
+              var singleUserPosts = results.map(function(results){ 
+                var psuObj = {
+                  "id": results.pId,
+                  "title": results.pTitle,
+                  "url": results.pURL,
+                  "userId": results.pUserId,
+                  "createdAt": results.pCreatedAt,
+                  "updatedAt": results.pUpdatedAt,
+                  "user": {
+                    "id": results.uId,
+                    "username": results.uUsername,
+                    "password": results.uPwd,
+                    "createdAt": results.userCreatedAt,
+                    "updatedAt": results.userUpdatedAt
+                  }
+                };
+                callback(psuObj);
+              });
+              callback(null, singleUserPosts);
+            }
+          }
+        
+      );
+      }
     }
   };
 };

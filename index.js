@@ -13,26 +13,48 @@ var connection = mysql.createConnection({
 var reddit = require('./reddit');
 var redditAPI = reddit(connection);
 
-// It's request time!
-redditAPI.createUser({
-  username: 'hello23',
-  password: 'xxx'
-}, function(err, user) {
+// Create user and new post
+// redditAPI.createUser({
+//   username: 'hello1',
+//   password: 'xxx'
+// }, function(err, user) {
+//   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     redditAPI.createPost({
+//       title: 'hi reddit!',
+//       url: 'https://www.reddit.com',
+//       userId: user.id
+//     }, function(err, post) {
+//       if (err) {
+//         console.log(err);
+//       }
+//       else {
+//         console.log(post);
+//       }
+//     });
+//   }
+// });
+
+
+// Get all posts for all users
+// redditAPI.getAllPosts(function(err, result) {
+//   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     console.log(result);
+//   }
+// });
+
+
+// Get all posts for a given user
+redditAPI.getAllPostsForUser(11, {numPerPage:25, page:0}, function(err, result) {
   if (err) {
     console.log(err);
   }
   else {
-    redditAPI.createPost({
-      title: 'hi reddit!',
-      url: 'https://www.reddit.com',
-      userId: user.id
-    }, function(err, post) {
-      if (err) {
-        console.log(err);
-      }
-      else {
-        console.log(post);
-      }
-    });
+    console.log(result);
   }
 });
