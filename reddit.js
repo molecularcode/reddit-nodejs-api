@@ -210,6 +210,64 @@ module.exports = function RedditAPI(conn) {
           }
         }
       );
-    }
+    },
+    createSubreddit: function(sub, callback) {
+      conn.query(
+        'INSERT INTO `subreddits` (`name`, `description`, `createdAt`) VALUES (?, ?, ?)', [sub.name, sub.description, null],
+        function(err, result) {
+          if (err) {
+            /*
+            There can be many reasons why a MySQL query could fail. While many of them are unknown, there's a particular error about unique usernames which we can be more explicit about!
+            */
+            if (err.code === 'ER_DUP_ENTRY') {
+              callback(new Error('A subreddit with this name already exists'));
+            }
+            else {
+              callback(err);
+            }
+          }
+          else {
+            /* Subreddit inserted successfully. Let's use the result.insertId to retrieve the subreddit and send it to the caller! */
+            conn.query(
+              'SELECT `id`,`name`, `url`, `description`, `createdAt`, `updatedAt` FROM `subreddits` WHERE `id` = ?', [result.insertId],
+              function(err, result) {
+                if (err) {
+                  callback(err);
+                }
+                else {
+                  callback(null, result[0]);
+                }
+              }
+            );
+          }
+        }
+      );
+    },
+    getAllSubreddits: function(callback) {
+      conn.query(`
+        SELECT s.id AS sId, name AS sName, url AS sURL, description AS sDesc, s.createdAt AS sCreatedAt, s.updatedAt AS sUpdatedAt
+        FROM subreddits AS s
+        ORDER BY s.createdAt DESC
+        `, function(err, results) {
+          if (err) {
+            callback(err);
+          }
+          else {
+            var subreddits = results.map(function(results){ 
+              var subsObj = {
+                "id": results.sId,
+                "name": results.sName,
+                "url": results.sURL,
+                "createdAt": results.sCreatedAt,
+                "updatedAt": results.sUpdatedAt,
+              };
+              return subsObj;
+            });
+            
+            callback(null, subreddits);
+          }
+        }
+      );
+    },
   };
 };

@@ -61,7 +61,28 @@ var redditAPI = reddit(connection);
 
 
 // Get a single post by postId
-redditAPI.getSinglePost(4, function(err, result) {
+// redditAPI.getSinglePost(4, function(err, result) {
+//   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     console.log(result);
+//   }
+// });
+
+
+// Create a new subreddit
+// redditAPI.createSubreddit({name: "myFourthSubreddit", description: "it's awesome"}, function(err, result) {
+//   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     console.log(result);
+//   }
+// });
+
+
+redditAPI.getAllSubreddits(function(err, result) {
   if (err) {
     console.log(err);
   }
