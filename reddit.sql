@@ -40,4 +40,21 @@ CREATE TABLE `subreddits` (
 -- Add subredditId column to the posts table and associate the subreddit id as a FOREIGN KEY
 ALTER TABLE `posts`
 ADD `subredditId` int(11) DEFAULT NULL,
-ADD FOREIGN KEY (subredditId) REFERENCES subreddits(id);
+ADD FOREIGN KEY (subredditId) REFERENCES subreddits(id) ON DELETE SET NULL,;
+
+
+-- Create a comments table
+CREATE TABLE `comments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `comment` varchar(10000) DEFAULT NULL,
+  `userId` int(11) DEFAULT NULL,
+  `postId` int(11) DEFAULT NULL,
+  `parentId` int(11) DEFAULT NULL,
+  `createdAt` TIMESTAMP NOT NULL DEFAULT 0,
+  `updatedAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id` (`id`),
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (postId) REFERENCES posts(id) ON DELETE SET NULL,
+  FOREIGN KEY (parentId) REFERENCES comments(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
