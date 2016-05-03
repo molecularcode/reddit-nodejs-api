@@ -354,7 +354,7 @@ module.exports = function RedditAPI(conn) {
         var newParentIds = res.map(function(item) {
           return item.id;
         }); // get next level of parent ids
-        // need to use that to access this so the function can be accessed outside of the function
+        // need to use 'that' to access 'this' so the function can be accessed outside of the function
         that.getComments(maxLevel - 1, newParentIds, commentsMap, finalComments, callback); // maxlevel -1 counts down to base case, the function calls itself within the function - recursion
       });
     }

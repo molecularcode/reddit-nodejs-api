@@ -1,7 +1,13 @@
 // load the mysql library
 var mysql = require('mysql');
 var util = require('util');
-
+var moment = require('moment');
+var express = require('express');
+var app = express();
+var cookieParser = require('cookie-parser');
+app.use(cookieParser());
+var bodyParser = require('body-parser');
+app.use(bodyParser());
 
 // create a connection to our Cloud9 server
 var connection = mysql.createConnection({
@@ -16,30 +22,79 @@ var connection = mysql.createConnection({
 var reddit = require('./reddit');
 var redditAPI = reddit(connection);
 
-//Create user and new post
-redditAPI.createUser({
-  username: 'hello5',
-  password: 'xxx'
-}, function(err, user) {
-  if (err) {
-    console.log(err);
-  }
-  else {
-    redditAPI.createPost({
-      title: 'hi reddit!',
-      url: 'https://www.reddit.com',
-      userId: user.id,
-      subredditId: 4
-    }, function(err, post) {
-      if (err) {
-        console.log(err);
-      }
-      else {
-        console.log(post);
-      }
-    });
-  }
+
+app.get('/hello', function(request, response) {
+    response.send("Hello World!");
 });
+
+
+// function to take an aray of objects and return a single string, including HTML
+function postToHTML(result) {
+  var htmlStart = '<div id="contents"> <h1>List of contents</h1> <ul class="contents-list">';
+  var htmlEnd = '</ul> </div>';
+  var postHTML = result.map(function(res){
+    return (
+      // post literial using ` and ${} to avoid having to close quotes every time switching from html to JS variable
+      `<li class="content-item" style="list-style-type: none;">
+        <h2 class="content-item__title" style="margin-bottom: 0px;"><a href="${res.url}" style="color: #B40404; text-decoration:none;">${res.title}</a></h2>
+        <p style="margin-top: 0px;">Created by ${res.username} ${moment(res.createdAt).fromNow()}</p>
+      </li>`);
+  });
+  return (htmlStart + postHTML.join('') + htmlEnd);
+}
+
+// first get the result of the DB query as an array of objects, then transform that into a single string, including HTML
+app.get('/posts', function(req, res) {
+  getPosts(function(err, result) {
+    if (err) {
+      res.status(500).send('<h2>ERROR!</h2>');
+    }
+    else {
+      res.send(postToHTML(result));
+    }
+  });
+});
+
+
+
+
+
+
+
+/* YOU DON'T HAVE TO CHANGE ANYTHING BELOW THIS LINE :) */
+// Boilerplate code to start up the web server
+var server = app.listen(process.env.PORT, process.env.IP, function () {
+  var host = server.address().address;
+  var port = server.address().port;
+
+  console.log('Example app listening at http://%s:%s', host, port);
+});
+
+
+// //Create user and new post
+// redditAPI.createUser({
+//   username: 'hello5',
+//   password: 'xxx'
+// }, function(err, user) {
+//   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     redditAPI.createPost({
+//       title: 'hi reddit!',
+//       url: 'https://www.reddit.com',
+//       userId: user.id,
+//       subredditId: 4
+//     }, function(err, post) {
+//       if (err) {
+//         console.log(err);
+//       }
+//       else {
+//         console.log(post);
+//       }
+//     });
+//   }
+// });
 
 
 // // Get all posts for all users
@@ -108,12 +163,12 @@ redditAPI.createUser({
 // });
 
 
-// Get all comments nested to X levels
-redditAPI.getComments(5, function(err, res) {
-  if (err) {
-    console.log(err);
-  }
-  else {
-    console.log(JSON.stringify(res, null, 4));
-  }
-});
+// // Get all comments nested to X levels
+// redditAPI.getComments(5, function(err, res) {
+//   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     console.log(JSON.stringify(res, null, 4));
+//   }
+// });
