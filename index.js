@@ -47,18 +47,42 @@ function postToHTML(result) {
 // Reddit Clone Homepage sorted by newest first
 // url/?page=1&posts=25
 // first get the result of the DB query as an array of objects, then transform into a single string, including HTML
-app.get('/', function(req, res) {
+app.get('/:sort', function(req, res) {
   var options = {
     numPerPage: Number(req.query.posts),
     page: Number(req.query.page)
   };
-  console.log(options);
+
+  var sortStr = req.params.sort;  
+  function sort(sortStr, result, callback) {
+    if (sortStr === "new") {
+      callback(result);
+    }
+    // else if(oper === "top") {
+    //   result.solution = num1-num2;
+    //   return result;
+    // }
+    // else if(oper === "hot") {
+    //   result.solution = num1*num2;
+    //   return result;
+    // }
+    // else if(oper === "controversial") {
+    //   result.solution = num1/num2;
+    //   return result;
+    // }
+    else {
+      callback("error");
+    }
+  }
+  
   redditAPI.getAllPosts(options, function(err, result) {
     if (err) {
       res.status(500).send('<h2>UNHELPFUL ERROR MSG!</h2>');
     }
     else {
-      res.send(postToHTML(result));
+      sort(sortStr, result, function(sortedRes) {
+        res.send(postToHTML(sortedRes));
+      });
     }
   });
 });
