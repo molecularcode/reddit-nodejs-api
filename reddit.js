@@ -56,7 +56,7 @@ module.exports = function RedditAPI(conn) {
     },
     createPost: function(post, callback) {
       conn.query(
-        'INSERT INTO `posts` (`userId`, `title`, `url`, `createdAt`, `subredditId`) VALUES (?, ?, ?, ?, ?)', [post.userId, post.title, post.url, null, post.subredditId],
+        'INSERT INTO `posts` (`userId`, `title`, `url`, `content`, `createdAt`, `subredditId`) VALUES (?, ?, ?, ?, ?, ?)', [post.userId, post.title, post.url, post.content, null, post.subredditId],
         function(err, result) {
           if (err) {
             callback(err);
@@ -64,7 +64,7 @@ module.exports = function RedditAPI(conn) {
           else {
             /* Post inserted successfully. Let's use the result.insertId to retrieve the post and send it to the caller! */
             conn.query(
-              'SELECT `id`,`title`,`url`,`userId`, `subredditId`, `createdAt`, `updatedAt` FROM `posts` WHERE `id` = ?', [result.insertId],
+              'SELECT `id`,`title`,`url`,`userId`, `content`, `subredditId`, `createdAt`, `updatedAt` FROM `posts` WHERE `id` = ?', [result.insertId],
               function(err, result) {
                 if (err) {
                   callback(err);
@@ -88,7 +88,7 @@ module.exports = function RedditAPI(conn) {
       var offset = (options.page -1 || 0) * limit;
 
       conn.query(`
-        SELECT p.id AS pId, p.title AS pTitle, p.url AS pURL, p.userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, u.username AS uUsername, u.password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt, s.id AS sId, s.name AS sName, s.url AS sURL, s.description AS sDesc, s.createdAt AS sCreatedAt, s.updatedAt AS sUpdatedAt
+        SELECT p.id AS pId, p.title AS pTitle, p.url AS pURL, p.content AS pContent, p.userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, u.username AS uUsername, u.password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt, s.id AS sId, s.name AS sName, s.url AS sURL, s.description AS sDesc, s.createdAt AS sCreatedAt, s.updatedAt AS sUpdatedAt
         FROM posts AS p
         LEFT JOIN users AS u ON u.id = p.userId
         LEFT JOIN subreddits AS s ON s.id = p.subredditId
@@ -105,6 +105,7 @@ module.exports = function RedditAPI(conn) {
                 "id": results.pId,
                 "title": results.pTitle,
                 "url": results.pURL,
+                "content": results.pContent,
                 "userId": results.pUserId,
                 "createdAt": results.pCreatedAt,
                 "updatedAt": results.pUpdatedAt,
@@ -148,7 +149,7 @@ module.exports = function RedditAPI(conn) {
       else {
 
         conn.query(`
-          SELECT p.id AS pId, title AS pTitle, url AS pURL, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
+          SELECT p.id AS pId, title AS pTitle, url AS pURL, p.content AS pContent, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
           FROM posts AS p
           JOIN users AS u ON u.id = p.userId AND u.id = ?
           ORDER BY p.createdAt DESC
@@ -164,6 +165,7 @@ module.exports = function RedditAPI(conn) {
                   "id": results.pId,
                   "title": results.pTitle,
                   "url": results.pURL,
+                  "content": results.pContent,
                   "userId": results.pUserId,
                   "createdAt": results.pCreatedAt,
                   "updatedAt": results.pUpdatedAt,
@@ -190,7 +192,7 @@ module.exports = function RedditAPI(conn) {
         }
     
       conn.query(`
-        SELECT p.id AS pId, title AS pTitle, url AS pURL, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
+        SELECT p.id AS pId, title AS pTitle, url AS pURL, p.content AS pContent, userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, username AS uUsername, password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt
         FROM posts AS p
         JOIN users AS u ON u.id = p.userId AND p.id = ?
         ORDER BY p.createdAt DESC
@@ -204,6 +206,7 @@ module.exports = function RedditAPI(conn) {
               "id": results[0].pId,
               "title": results[0].pTitle,
               "url": results[0].pURL,
+              "content": results[0].pContent,
               "userId": results[0].pUserId,
               "createdAt": results[0].pCreatedAt,
               "updatedAt": results[0].pUpdatedAt,

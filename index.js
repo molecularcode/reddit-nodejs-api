@@ -23,41 +23,73 @@ var reddit = require('./reddit');
 var redditAPI = reddit(connection);
 
 // function to test web server is working
-// app.get('/hello', function(request, response) {
+// app.get('/newpost', function(request, response) {
 //     response.send("Hello World!");
 // });
 
 
 // function to take an aray of objects and return a single string, including HTML
-function postToHTML(result) {
+function postsToHTML(result) {
   var htmlStart = '<div id="contents"> <h1>Reddit Clone Homepage</h1> <ul class="contents-list">';
   var htmlEnd = '</ul> </div>';
+  console.log(result);
   var postHTML = result.map(function(res){
     return (
       // post literial using ` and ${} to avoid having to close quotes every time switching from html to JS variable
       `<li class="content-item" style="list-style-type: none;">
-        <h2 class="content-item__title" style="margin-bottom: 0px;"><a href="${res.url}" style="color: #B40404; text-decoration:none;">${res.title}</a></h2>
-        <p style="margin-top: 0px;">Created by ${res.username} ${moment(res.createdAt).fromNow()}</p>
-      </li>`);
+        <h2 class="content-item__title" style="margin-bottom: 0px;"><a href="${res.url}" style="color: rgb(255, 87, 0); text-decoration:none;">${res.title}</a></h2>
+        <p style="margin-top: 0px;">Created by <b>${res.user.username}</b> ${moment(res.createdAt).fromNow()}</p>
+        <p style="margin-top: 0px;">${res.content}</p>
+      </li>`
+    );
   });
+  //console.log(postHTML.join(''));
   return (htmlStart + postHTML.join('') + htmlEnd);
 }
 
+// function to take a single object and return a single string, including HTML
+function postToHTML(res) {
+  console.log(res);
+  return (
+    `<div id="contents"> <h1>${res.title}</h1>
+      <p style="margin-top: 0px;">Created by <b>${res.user.username}</b> ${moment(res.createdAt).fromNow()}</p>
+      <p style="margin-top: 0px;">${res.content}</p>
+    </div>`
+  );
+}
 
-// Reddit Clone Homepage sorted by newest first
+// Show a header and footer above and below the page content. MUST wrap every send and redirect in this function
+function headfoot(page){
+  return `
+    <header style="background-color: rgb(255, 87, 0); color: #fff; text-align:center; padding: 1px 0px 10px ">
+      <h1>Reddit Clone</h1>
+      <nav style="text-transform: uppercase; margin-top: 10px;">
+        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/?page=1&posts=25" style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Homepage</a>
+        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/newpost"  style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Create New Post</a>
+      </nav>
+    </header>
+    ${page}
+    <footer style="background-color: rgb(255, 87, 0); color: #fff; text-align:center; padding: 1px 0px 10px;"><h2>FOOTER</h2></footer>
+  `;
+}
+
+
+// Reddit Clone Homepage with sort functionality
+// -----------------------------------------------------------------------------
 // url/?page=1&posts=25
 // first get the result of the DB query as an array of objects, then transform into a single string, including HTML
-app.get('/:sort', function(req, res) {
+app.get('/', function(req, res) {
   var options = {
     numPerPage: Number(req.query.posts),
     page: Number(req.query.page)
   };
 
-  var sortStr = req.params.sort;  
+  var sortStr = req.query.sort;  
   function sort(sortStr, result, callback) {
-    if (sortStr === "new") {
+    if (sortStr === "new"|| sortStr === undefined) {
       callback(result);
     }
+    // COME BACK LATER AND BUILD OTHER SORT FUNCTIONS AFTER IMPLEMENTING THE VOTING SYSTEM
     // else if(oper === "top") {
     //   result.solution = num1-num2;
     //   return result;
@@ -70,9 +102,9 @@ app.get('/:sort', function(req, res) {
     //   result.solution = num1/num2;
     //   return result;
     // }
-    else {
-      callback("error");
-    }
+    // else {
+    //   callback("error");
+    // }
   }
   
   redditAPI.getAllPosts(options, function(err, result) {
@@ -81,11 +113,71 @@ app.get('/:sort', function(req, res) {
     }
     else {
       sort(sortStr, result, function(sortedRes) {
-        res.send(postToHTML(sortedRes));
+        //console.log(sortedRes);
+        res.send(headfoot(postsToHTML(sortedRes)));
       });
     }
   });
 });
+
+
+// Single Post Page
+// -----------------------------------------------------------------------------
+app.get('/post', function(req, res) {
+  var postId = Number(req.query.postid);  
+  redditAPI.getSinglePost(postId, function(err, post) {
+    if (err) {
+      res.send('<h2>ERROR: no post found!</h2>' + err);
+    }
+    else {
+      console.log(post);
+      res.send(headfoot(postToHTML(post)));
+    }
+  });
+});
+
+
+// Create New Post page
+// -----------------------------------------------------------------------------
+// send newPostForm.html file to webpage
+app.get('/newpost', function(req, res) {
+  var options = {
+    root: __dirname + '/'
+  };
+
+  res.sendFile('newPostForm.html', options, function(err) {
+    if (err) {
+      res.status(500).send('<h2>ERROR!</h2>' + err);
+    }
+    else {
+      return;
+    }
+  });
+});
+
+//Create New Post by taking the inputs from filling in and submitting the newPostForm.html and create a new post. If successful, redirect to the homepage page showing 5 most recent posts
+app.post('/newpost', function(req, res) {
+  var newTitle = req.body.title;
+  var newURL = req.body.url;
+  var newContent = req.body.content;
+  redditAPI.createPost({
+    title: newTitle,
+    url: newURL,
+    content: newContent,
+    userId: 1,
+    subredditId: 8
+  }, function(err, post) {
+    console.log(post)
+    if (err) {
+      res.send('<h2>ERROR: post not created!</h2>' + err);
+    }
+    else {
+      // redrect to single post page on successful submission
+      res.redirect(`/post?postid=${post.id}`);
+    }
+  });
+});
+
 
 
 
