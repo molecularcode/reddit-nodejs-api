@@ -85,7 +85,7 @@ module.exports = function RedditAPI(conn) {
         options = {};
       }
       var limit = options.numPerPage || 25; // if options.numPerPage is "falsy" then use 25
-      var offset = (options.page || 0) * limit;
+      var offset = (options.page -1 || 0) * limit;
 
       conn.query(`
         SELECT p.id AS pId, p.title AS pTitle, p.url AS pURL, p.userId AS pUserId, p.createdAt AS pCreatedAt, p.updatedAt AS pUpdatedAt, u.id AS uId, u.username AS uUsername, u.password AS uPwd, u.createdAt AS userCreatedAt, u.updatedAt AS userUpdatedAt, s.id AS sId, s.name AS sName, s.url AS sURL, s.description AS sDesc, s.createdAt AS sCreatedAt, s.updatedAt AS sUpdatedAt
