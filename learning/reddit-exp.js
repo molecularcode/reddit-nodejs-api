@@ -309,54 +309,110 @@ module.exports = function RedditAPI(conn) {
         }
       );
     },
-    getComments: function(maxLevel, parentIds, commentsMap, finalComments, callback) {
-      //Query declared at top level to build it dynamically.
-      var query;
-      
-      // need to asign this to that so that I can access the createComment key and use it's value/function
-      var that = this;
-      if (!callback) {
-        // first time function is called
-        callback = parentIds;
-        parentIds = [];
-        commentsMap = {};
-        finalComments = [];
-        query = 'select * from comments where parentId is null';
-      }
-      //base case scenario - always necessary for recursive function so it knows when to stop
-      else if (maxLevel === 0 || parentIds.length === 0) {
-        callback(null, finalComments);
-        return;
+    getCommentsForPost: function(postId, callback) {
+      // If a postId is not provided, terminate the function
+      if (typeof postId !== "number") {
+        callback("Please enter a valid post ID");
       }
       else {
-        // gets children comments
-        query = 'select * from comments where parentId in (' + parentIds.join(',') + ')'; // this equates to (1, 2, 3, 4, 5...) ~= where id = 1 or id = 2 or id = 3...
-      }
-      conn.query(query, function(err, res) {
-        if (err) {
-          callback(err);
-          return;
-        }
-        res.forEach(
-          function(comment) {
-            commentsMap[comment.id] = comment; // set object key to column header
-            if (comment.parentId === null) {
-              finalComments.push(comment);
+        conn.query(`
+          SELECT c.id AS cId, c.comment AS cComment, c.userId AS cUserId, c.postId AS cPostId, c.parentId AS cParentId, c.createdAt AS cCreatedAt, c.updatedAt AS cUpdatedAt, r.id AS rId, r.comment AS rComment, r.userId AS rUserId, r.postId AS rPostId, r.parentId AS rParentId, r.createdAt AS rCreatedAt, r.updatedAt AS rUpdatedAt, r2.id AS r2Id, r2.comment AS r2Comment, r2.userId AS r2UserId, r2.postId AS r2PostId, r2.parentId AS r2ParentId, r2.createdAt AS r2CreatedAt, r2.updatedAt AS r2UpdatedAt
+          FROM comments AS c
+          LEFT JOIN comments AS r ON c.id = r.parentId AND c.postId = ?
+          LEFT JOIN comments AS r2 ON r.id = r2.parentId AND r.postId = ?
+
+          `, [postId, postId],
+          function(err, results) {
+            if (err) {
+              callback(err);
             }
             else {
-              var parent = commentsMap[comment.parentId]; // save parentId as var parent
-              parent.replies = parent.replies || []; // set reply key as existing array or create reply key as empty array
-              parent.replies.push(comment); // push child comment to replies array
+              //console.log(results);
+              var binC = {};
+              var binR = {};
+              var comArr = [];
+              results.forEach(function(results) {
+                var experiment;
+                if (!binC[results.cId]) {
+                  binC[results.cId] = results.cId;
+                  experiment = {
+                    "id": results.cId,
+                    "comment": results.cComment,
+                    "userId": results.cUserId,
+                    "postId": results.cPostId,
+                    "parentId": results.cParentId,
+                    "createdAt": results.cCreatedAt,
+                    "updatedAt": results.cUpdatedAt
+                    // "replies": !results.rId ? null : {
+                    //   "id": results.rId,
+                    //   "comment": results.rComment,
+                    //   "userId": results.rUserId,
+                    //   "postId": results.rPostId,
+                    //   "parentId": results.rParentId,
+                    //   "createdAt": results.rCreatedAt,
+                    //   "updatedAt": results.rUpdatedAt,
+                    //   "replies": !results.r2Id ? null : {
+                    //     "id": results.r2Id,
+                    //     "comment": results.r2Comment,
+                    //     "userId": results.r2UserId,
+                    //     "postId": results.r2PostId,
+                    //     "parentId": results.r2ParentId,
+                    //     "createdAt": results.r2CreatedAt,
+                    //     "updatedAt": results.r2UpdatedAt,
+                    //   }
+                    // }
+                  };
+                  
+                  
+                }
+                
+                if(experiment){
+                   if(results.rParentId === experiment.id && !experiment.replies){
+                     experiment["replies"] = []
+                  } 
+                  
+               
+                   var exp2 = { "id": results.rId,
+                      "comment": results.rComment,
+                      "userId": results.rUserId,
+                      "postId": results.rPostId,
+                      "parentId": results.rParentId,
+                      "createdAt": results.rCreatedAt,
+                      "updatedAt": results.rUpdatedAt
+                   }
+                   
+                   experiment.replies.push(exp2)
+                }
+                 
+        
+                
+               experiment ? comArr.push(experiment) : null
+                // console.log(binC);
+                // //console.log(comObj[1]);
+                // comArr.forEach(function(results) {
+                //   if (results.rParentId === binC[results.cId]) {
+                //     binR[results.rParentId] = results.rParentId;
+                //     comArr[results.cId - 1].replies = [{
+                //       "id": results.rId,
+                //       "comment": results.rComment,
+                //       "userId": results.rUserId,
+                //       "postId": results.rPostId,
+                //       "parentId": results.rParentId,
+                //       "createdAt": results.rCreatedAt,
+                //       "updatedAt": results.rUpdatedAt
+                //     }];
+                //   }
+                //});
+              });
+
+              callback(null, comArr);
             }
           }
         );
-
-        var newParentIds = res.map(function(item) {
-          return item.id;
-        }); // get next level of parent ids
-        // need to use that to access this so the function can be accessed outside of the function
-        that.getComments(maxLevel - 1, newParentIds, commentsMap, finalComments, callback); // maxlevel -1 counts down to base case, the function calls itself within the function - recursion
-      });
+      }
     }
   };
 };
+
+          //ORDER BY c.createdAt DESC
+          //WHERE r.parentId != null OR r2.parentID != null
