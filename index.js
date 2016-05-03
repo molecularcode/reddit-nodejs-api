@@ -28,32 +28,32 @@ app.get('/hello', function(request, response) {
 });
 
 
-// function to take an aray of objects and return a single string, including HTML
-function postToHTML(result) {
-  var htmlStart = '<div id="contents"> <h1>List of contents</h1> <ul class="contents-list">';
-  var htmlEnd = '</ul> </div>';
-  var postHTML = result.map(function(res){
-    return (
-      // post literial using ` and ${} to avoid having to close quotes every time switching from html to JS variable
-      `<li class="content-item" style="list-style-type: none;">
-        <h2 class="content-item__title" style="margin-bottom: 0px;"><a href="${res.url}" style="color: #B40404; text-decoration:none;">${res.title}</a></h2>
-        <p style="margin-top: 0px;">Created by ${res.username} ${moment(res.createdAt).fromNow()}</p>
-      </li>`);
-  });
-  return (htmlStart + postHTML.join('') + htmlEnd);
-}
+// // function to take an aray of objects and return a single string, including HTML
+// function postToHTML(result) {
+//   var htmlStart = '<div id="contents"> <h1>List of contents</h1> <ul class="contents-list">';
+//   var htmlEnd = '</ul> </div>';
+//   var postHTML = result.map(function(res){
+//     return (
+//       // post literial using ` and ${} to avoid having to close quotes every time switching from html to JS variable
+//       `<li class="content-item" style="list-style-type: none;">
+//         <h2 class="content-item__title" style="margin-bottom: 0px;"><a href="${res.url}" style="color: #B40404; text-decoration:none;">${res.title}</a></h2>
+//         <p style="margin-top: 0px;">Created by ${res.username} ${moment(res.createdAt).fromNow()}</p>
+//       </li>`);
+//   });
+//   return (htmlStart + postHTML.join('') + htmlEnd);
+// }
 
-// first get the result of the DB query as an array of objects, then transform that into a single string, including HTML
-app.get('/posts', function(req, res) {
-  getPosts(function(err, result) {
-    if (err) {
-      res.status(500).send('<h2>ERROR!</h2>');
-    }
-    else {
-      res.send(postToHTML(result));
-    }
-  });
-});
+// // first get the result of the DB query as an array of objects, then transform that into a single string, including HTML
+// app.get('/posts', function(req, res) {
+//   getPosts(function(err, result) {
+//     if (err) {
+//       res.status(500).send('<h2>ERROR!</h2>');
+//     }
+//     else {
+//       res.send(postToHTML(result));
+//     }
+//   });
+// });
 
 
 
