@@ -54,6 +54,7 @@ module.exports = function RedditAPI(conn) {
         }
       });
     },
+    
     createPost: function(post, callback) {
       conn.query(
         'INSERT INTO `posts` (`userId`, `title`, `url`, `content`, `createdAt`, `subredditId`) VALUES (?, ?, ?, ?, ?, ?)', [post.userId, post.title, post.url, post.content, null, post.subredditId],
@@ -78,6 +79,7 @@ module.exports = function RedditAPI(conn) {
         }
       );
     },
+    
     getAllPosts: function(options, callback) {
       // In case we are called without an options parameter, shift all the parameters manually
       if (!callback) {
@@ -133,6 +135,7 @@ module.exports = function RedditAPI(conn) {
         }
       );
     },
+    
     getAllPostsForUser: function(userId, options, callback) {
       // In case we are called without an options parameter, shift all the parameters manually
       if (!callback) {
@@ -185,6 +188,7 @@ module.exports = function RedditAPI(conn) {
         );
       }
     },
+    
     getSinglePost: function(postId, callback) {
       // If a postId is not provided, terminate the function
       if (typeof postId !== "number") {
@@ -223,6 +227,7 @@ module.exports = function RedditAPI(conn) {
         }
       );
     },
+    
     createSubreddit: function(sub, callback) {
       conn.query(
         'INSERT INTO `subreddits` (`name`, `description`, `createdAt`) VALUES (?, ?, ?)', [sub.name, sub.description, null],
@@ -255,6 +260,7 @@ module.exports = function RedditAPI(conn) {
         }
       );
     },
+    
     getAllSubreddits: function(callback) {
       conn.query(`
         SELECT s.id AS sId, name AS sName, url AS sURL, description AS sDesc, s.createdAt AS sCreatedAt, s.updatedAt AS sUpdatedAt
@@ -281,6 +287,7 @@ module.exports = function RedditAPI(conn) {
         }
       );
     },
+    
     createComment: function(comment, callback) {
     var ifExists;
     if (comment.parentId) {
@@ -312,6 +319,7 @@ module.exports = function RedditAPI(conn) {
         }
       );
     },
+    
     getComments: function(maxLevel, parentIds, commentsMap, finalComments, callback) {
       //Query declared at top level to build it dynamically.
       var query;
@@ -361,6 +369,7 @@ module.exports = function RedditAPI(conn) {
         that.getComments(maxLevel - 1, newParentIds, commentsMap, finalComments, callback); // maxlevel -1 counts down to base case, the function calls itself within the function - recursion
       });
     },
+    
     getCommentsByPost: function(postId, maxLevel, parentIds, commentsMap, finalComments, callback) {
       //Query declared at top level to build it dynamically.
       var query;

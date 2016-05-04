@@ -80,12 +80,12 @@ function postToHTML(res, allComments) {
   );
 }
 
-// capitalize 1st letter of function when using React
+// function to return the comments as nested HTML lists (capitalize 1st letter of function when using React)
 function CommentList(allComments) {
   //console.log(allComments);
   return `<ul>
     ${allComments.map(function(comment) {
-    console.log(comment);
+    //console.log(comment);
       return `<li style="margin-top: 10px;">
         ${comment.comment}<br />
         Posted by <b>${comment.username}</b>  ${moment(comment.cCreatedAt).fromNow()}
@@ -141,6 +141,47 @@ app.get('/', function(req, res) {
         //console.log(sortedRes);
         res.send(headfoot(postsToHTML(sortedRes)));
       });
+    }
+  });
+});
+
+
+// Signup Page
+// -----------------------------------------------------------------------------
+// send signup.html file to webpage
+app.get('/signup', function(req, res) {
+  var options = {
+    root: __dirname + '/'
+  };
+
+  res.sendFile('signup.html', options, function(err) {
+    if (err) {
+      res.status(500).send('<h2>ERROR, you have been signed up!</h2>' + err);
+    }
+    else {
+      return;
+    }
+  });
+});
+
+
+// Create New User
+// -----------------------------------------------------------------------------
+// take the inputs from filling in and submitting the signup.html form and create a new user. If successful, redirect to the homepage page
+app.post('/signup', function(req, res) {
+  var newUname = req.body.uname;
+  var newPwd = req.body.password;
+  redditAPI.createUser({
+    username: newUname,
+    password: newPwd
+  }, function(err, user) {
+    //console.log(user);
+    if (err) {
+      res.send('<h2>ERROR: user not created!</h2>' + err);
+    }
+    else {
+      // redrect to homepage on successful submission
+      res.redirect(`/?page=1&posts=25`);
     }
   });
 });
