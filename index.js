@@ -82,12 +82,13 @@ function postToHTML(res, allComments) {
 
 // capitalize 1st letter of function when using React
 function CommentList(allComments) {
+  //console.log(allComments);
   return `<ul>
     ${allComments.map(function(comment) {
+    console.log(comment);
       return `<li style="margin-top: 10px;">
-        Comment (<b>${comment.parentId}</b>) on post ${comment.postId}<br />
         ${comment.comment}<br />
-        Posted by <b>${comment.userId}</b>  ${moment(comment.createdAt).fromNow()}
+        Posted by <b>${comment.username}</b>  ${moment(comment.cCreatedAt).fromNow()}
         ${comment.replies ? CommentList(comment.replies) : ''}
       </li>`;
     }).join('')}

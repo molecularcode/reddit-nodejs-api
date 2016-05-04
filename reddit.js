@@ -373,7 +373,7 @@ module.exports = function RedditAPI(conn) {
         parentIds = [];
         commentsMap = {};
         finalComments = [];
-        query = 'select * from comments where parentId is null AND postId = (' + postId + ')';
+        query = 'select *, comments.id AS cId, comments.createdAt AS cCreatedAt, comments.updatedAt AS cUpdatedAt from comments LEFT JOIN users ON users.id=comments.userId where parentId is null AND postId = (' + postId + ') ORDER BY cCreatedAt DESC';
       }
       //base case scenario - always necessary for recursive function so it knows when to stop
       else if (maxLevel === 0 || parentIds.length === 0) {
@@ -382,7 +382,7 @@ module.exports = function RedditAPI(conn) {
       }
       else {
         // gets children comments
-        query = 'select * from comments where parentId in (' + parentIds.join(',') + ') AND postId = (' + postId + ')'; // this equates to (1, 2, 3, 4, 5...) ~= where id = 1 or id = 2 or id = 3...
+        query = 'select *, comments.id AS cId, comments.createdAt AS cCreatedAt, comments.updatedAt AS cUpdatedAt from comments LEFT JOIN users ON users.id=comments.userId where parentId in (' + parentIds.join(',') + ') AND postId = (' + postId + ') ORDER BY cCreatedAt DESC'; // this equates to (1, 2, 3, 4, 5...) ~= where id = 1 or id = 2 or id = 3...
       }
       conn.query(query, function(err, res) {
         if (err) {
@@ -391,7 +391,7 @@ module.exports = function RedditAPI(conn) {
         }
         res.forEach(
           function(comment) {
-            commentsMap[comment.id] = comment; // set object key to column header
+            commentsMap[comment.cId] = comment; // set object key to column header
             if (comment.parentId === null) {
               finalComments.push(comment);
             }
@@ -404,7 +404,7 @@ module.exports = function RedditAPI(conn) {
         );
 
         var newParentIds = res.map(function(item) {
-          return item.id;
+          return item.cId;
         }); // get next level of parent ids
         // need to use 'that' to access 'this' so the function can be accessed outside of the function
         that.getCommentsByPost(postId, maxLevel - 1, newParentIds, commentsMap, finalComments, callback); // maxlevel -1 counts down to base case, the function calls itself within the function - recursion
