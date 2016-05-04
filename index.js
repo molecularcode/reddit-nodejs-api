@@ -22,6 +22,9 @@ var connection = mysql.createConnection({
 var reddit = require('./reddit');
 var redditAPI = reddit(connection);
 
+// load newCommentForm as a module
+var ncf = require('./newCommentForm.js');
+
 // function to test web server is working
 // app.get('/newpost', function(request, response) {
 //     response.send("Hello World!");
@@ -32,7 +35,7 @@ var redditAPI = reddit(connection);
 function postsToHTML(result) {
   var htmlStart = '<div id="contents"> <h1>Reddit Clone Homepage</h1> <ul class="contents-list">';
   var htmlEnd = '</ul> </div>';
-  console.log(result);
+  //console.log(result);
   var postHTML = result.map(function(res){
     return (
       // post literial using ` and ${} to avoid having to close quotes every time switching from html to JS variable
@@ -47,13 +50,23 @@ function postsToHTML(result) {
   return (htmlStart + postHTML.join('') + htmlEnd);
 }
 
-// function to take a single object and return a single string, including HTML
-function postToHTML(res) {
-  console.log(res);
+// function to take a single object and return a single string, including HTML and include newCommentForm
+function postToHTML(res, allComments) {
+  console.log(allComments);
   return (
     `<div id="contents"> <h1>${res.title}</h1>
       <p style="margin-top: 0px;">Created by <b>${res.user.username}</b> ${moment(res.createdAt).fromNow()}</p>
       <p style="margin-top: 0px;">${res.content}</p>
+      ${ncf}
+      <div class="comments">
+      <ul>
+        ${allComments.map(function(comment){
+          return `
+            <li>${comment.comment}<br />Posted by <b>${comment.userId}</b>  ${moment(comment.createdAt).fromNow()}</li>
+          `;
+        }).join('')}
+        </ul>
+      </div>
     </div>`
   );
 }
@@ -130,8 +143,20 @@ app.get('/post', function(req, res) {
       res.send('<h2>ERROR: no post found!</h2>' + err);
     }
     else {
-      console.log(post);
-      res.send(headfoot(postToHTML(post)));
+      //console.log(post);
+      //get me the comments, call back call this shit below
+      redditAPI.getComments(3, function(err, results){
+        //   if (err) {
+//     console.log(err);
+//   }
+//   else {
+//     console.log(JSON.stringify(res, null, 4));
+//   }
+
+        
+        res.send(headfoot(postToHTML(post, results)));
+      })
+      
     }
   });
 });
@@ -155,6 +180,7 @@ app.get('/newpost', function(req, res) {
   });
 });
 
+
 //Create New Post by taking the inputs from filling in and submitting the newPostForm.html and create a new post. If successful, redirect to the homepage page showing 5 most recent posts
 app.post('/newpost', function(req, res) {
   var newTitle = req.body.title;
@@ -167,7 +193,7 @@ app.post('/newpost', function(req, res) {
     userId: 1,
     subredditId: 8
   }, function(err, post) {
-    console.log(post)
+    //console.log(post);
     if (err) {
       res.send('<h2>ERROR: post not created!</h2>' + err);
     }
@@ -179,7 +205,30 @@ app.post('/newpost', function(req, res) {
 });
 
 
-
+// Create New Comment by taking the input from filling in the comment form on the single comment page (created by ncf - new comment form module). If successful, redirect/refresh single post page
+app.post('/newcomment', function(req, res) {
+  var newComment = req.body.comment;
+  
+  // Need to get the postId from the url of the page where the comment was posted; get url from referer in header, split it at the = of the query string and convet to a number
+  var refererURL = req.headers.referer.split('='); 
+  var postId = Number(refererURL[1]);
+  
+  redditAPI.createComment({
+    text: newComment,
+    userId: 1,
+    postId: postId
+  }, function(err, comment) {
+    //console.log(comment);
+    if (err) {
+      res.send('<h2>ERROR: comment could not be created!</h2>' + err);
+    }
+    else {
+      // redrect to single post page on successful submission
+      //console.log(comment);
+      res.redirect(`/post?postid=${comment.postId}`);
+    }
+  });
+});
 
 
 
