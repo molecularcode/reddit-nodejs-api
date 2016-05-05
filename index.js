@@ -8,6 +8,9 @@ var cookieParser = require('cookie-parser');
 app.use(cookieParser());
 var bodyParser = require('body-parser');
 app.use(bodyParser());
+// install then use express cookie-parser to parse cookie info instead of receiving a single long string
+var cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 // create a connection to our Cloud9 server
 var connection = mysql.createConnection({
@@ -25,10 +28,18 @@ var redditAPI = reddit(connection);
 // load newCommentForm as a module
 var ncf = require('./newCommentForm.js');
 
-// function to test web server is working
-// app.get('/newpost', function(request, response) {
-//     response.send("Hello World!");
-// });
+// .use creates middware to process the get request and do something to it, in this case show header for all requests
+app.use(function(req, res, next){
+  console.log(req.headers);
+  // next REQUIRED so that the middleware doesn't block the stream and allows the request to move on
+  next();
+});
+
+// parse cookies
+app.use(function(req, res, next){
+  console.log(req.cookies);
+  next();
+});
 
 
 // Show a header and footer above and below the page content. MUST wrap every send and redirect in this function
