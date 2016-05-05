@@ -1,5 +1,6 @@
 var newCommentForm = `
 <form action="/newcomment" method="POST">
+  <h2>Leave a comment</h2>
   <div>
     <textarea required name="comment" placeholder="Write your comment" style="rows: '10' cols: '100'; padding: 10px;"></textarea>
   </div>

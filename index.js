@@ -39,6 +39,8 @@ function headfoot(page){
       <nav style="text-transform: uppercase; margin-top: 10px;">
         <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/?page=1&posts=25" style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Homepage</a>
         <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/newpost"  style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Create New Post</a>
+        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/login"  style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Login</a>
+        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/signup"  style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Sign Up</a>
       </nav>
     </header>
     ${page}
@@ -182,6 +184,48 @@ app.post('/signup', function(req, res) {
     else {
       // redrect to homepage on successful submission
       res.redirect(`/?page=1&posts=25`);
+    }
+  });
+});
+
+
+// Login Page
+// -----------------------------------------------------------------------------
+// send signup.html file to webpage
+app.get('/login', function(req, res) {
+  var options = {
+    root: __dirname + '/'
+  };
+
+  res.sendFile('login.html', options, function(err) {
+    if (err) {
+      res.status(500).send('<h2>ERROR!</h2>' + err);
+    }
+    else {
+      return;
+    }
+  });
+});
+
+
+// Log User In
+// -----------------------------------------------------------------------------
+// take the inputs from filling in and submitting the login.html form and verify the login credentials
+app.post('/login', function(req, res) {
+  var uname = req.body.exUname;
+  var pwd = req.body.exPwd;
+  redditAPI.verifyLogin({
+    username: uname,
+    password: pwd
+  }, function(err, result) {
+    if (err) {
+      res.send('<h2>ERROR: username or password does not exist!</h2>' + err);
+    }
+    else {
+      // redrect to homepage on successful submission
+      //res.redirect(`/?page=1&posts=25`);
+      // return username
+      res.send(result);
     }
   });
 });

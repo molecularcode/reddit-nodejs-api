@@ -55,6 +55,25 @@ module.exports = function RedditAPI(conn) {
       });
     },
     
+    verifyLogin: function(exUser, callback) {
+      conn.query('SELECT * FROM `users` WHERE `username`= ?', [exUser.username], function(err, result) {
+        if (result.length === 0) {
+          callback(new Error('username or password incorrect')); // in this case the user does not exists
+        }
+        else {
+          var user = result[0].username;
+          bcrypt.compare(exUser.password, result[0].password, function(err, resultp) {
+            if (resultp === true) { // let's be extra safe here
+              callback(null, user);
+            }
+            else {
+              callback(new Error('username or password incorrect')); // in this case the password is wrong, but we reply with the same error
+            }
+          });
+        }
+      });
+    },
+    
     createPost: function(post, callback) {
       conn.query(
         'INSERT INTO `posts` (`userId`, `title`, `url`, `content`, `createdAt`, `subredditId`) VALUES (?, ?, ?, ?, ?, ?)', [post.userId, post.title, post.url, post.content, null, post.subredditId],
