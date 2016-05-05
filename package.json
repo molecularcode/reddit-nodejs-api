@@ -16,9 +16,7 @@
     "express": "^4.13.4",
     "moment": "^2.13.0",
     "mysql": "^2.10.2",
-    "node-sass": "^3.7.0",
     "nodemon": "^1.9.2",
-    "path": "^0.12.7",
     "secure-random": "^1.1.1"
   }
 }

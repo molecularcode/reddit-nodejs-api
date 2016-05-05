@@ -465,6 +465,30 @@ module.exports = function RedditAPI(conn) {
         // need to use 'that' to access 'this' so the function can be accessed outside of the function
         that.getCommentsByPost(postId, maxLevel - 1, newParentIds, commentsMap, finalComments, callback); // maxlevel -1 counts down to base case, the function calls itself within the function - recursion
       });
+    },
+    
+    createOrUpdateVote: function(vote, callback) {
+      conn.query(
+        'INSERT INTO `votes` SET `postId`=?, `userId`=?, `vote`=? ON DUPLICATE KEY UPDATE `vote`=?', [vote.postId, vote.userId, vote.vote, vote.vote],
+        function(err, result) {
+          if (err) {
+            callback(err);
+          }
+          else {
+            conn.query(
+              `SELECT * FROM votes WHERE userId = ? AND postId = ?`, [vote.userId, vote.postId],
+              function(err, voted) {
+                if (err) {
+                  callback(err);
+                }
+                else {
+                  callback(null, voted);
+                }
+              }
+            );
+          }
+        }
+      );
     }
   };
 };

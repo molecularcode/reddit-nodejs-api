@@ -1,0 +1,36 @@
+body {
+  background-color: #f8ece0; }
+
+header, footer {
+  background-color: #ff5700;
+  color: white;
+  text-align: center;
+  padding: 1px 0px 10px; }
+
+nav {
+  text-transform: uppercase;
+  margin-top: 10px; }
+  nav a {
+    color: white;
+    text-decoration: none;
+    padding: 10px; }
+
+.content-item-title {
+  margin-bottom: 0px; }
+  .content-item-title a {
+    color: #ff5700;
+    text-decoration: none; }
+
+#contents p {
+  margin-top: 0px; }
+
+li.content-item {
+  list-style-type: none; }
+
+#hpMsg {
+  background-color: #a9f5a9;
+  border: 1px solid #01df74;
+  padding: 20px;
+  margin: 10px 0px; }
+
+/*# sourceMappingURL=style.css.map */

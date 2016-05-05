@@ -9,7 +9,8 @@ app.use(cookieParser());
 app.use(checkLoginToken);
 var bodyParser = require('body-parser');
 app.use(bodyParser());
-app.use(express.static('css'));
+app.use(express.static('public'));
+
 
 // load newCommentForm as a module
 var ncf = require('./newCommentForm.js');
@@ -83,7 +84,11 @@ function headfoot(page){
 }
 
 // function to take an aray of objects and return a single string, including HTML
-function postsToHTML(result) {
+function postsToHTML(result, loggedIn) {
+  var htmlMsg = '';
+  if (loggedIn === true) {
+    htmlMsg = '<div id="hpMsg" class="loggedin">You are already logged in!</div>';
+  }
   var htmlStart = '<div id="contents"> <h1>Reddit Clone Homepage</h1> <ul class="contents-list">';
   var htmlEnd = '</ul> </div>';
   var postHTML = result.map(function(res){
@@ -97,16 +102,21 @@ function postsToHTML(result) {
     );
   });
   //console.log(postHTML.join(''));
-  return (htmlStart + postHTML.join('') + htmlEnd);
+  return (htmlMsg + htmlStart + postHTML.join('') + htmlEnd);
 }
 
 // function to take a single object and return a single string, including HTML and include newCommentForm
-function postToHTML(res, allComments) {
-  //console.log(allComments);
+function postToHTML(res, allComments, callback) {
+  callback(res.id);
   return (
     `<div id="contents"> <h1>${res.title}</h1>
       <p>Created by <b>${res.user.username}</b> ${moment(res.createdAt).fromNow()}</p>
       <p>${res.content}</p>
+      <form action="/vote" method="POST">
+        <h2>Upvote or downvote the post</h2>
+        <button type="submit" name="vote" value="1" > Upvote </button>
+        <button type="submit" name="vote" value="-1" > Downvote </button>
+      </form>
       ${ncf}
       <div class="comments">
         ${CommentList(allComments)}
@@ -172,10 +182,17 @@ app.get('/', function(req, res) {
       res.status(500).send('<h2>UNHELPFUL ERROR MSG!</h2>');
     }
     else {
-      sort(sortStr, result, function(sortedRes) {
-        //console.log(sortedRes);
-        res.send(headfoot(postsToHTML(sortedRes)));
-      });
+      if (req.query.error === 'loggedIn') {
+        sort(sortStr, result, function(sortedRes) {
+          
+          res.send(headfoot(postsToHTML(sortedRes, true)));
+        });
+      }
+      else {
+        sort(sortStr, result, function(sortedRes) {
+          res.send(headfoot(postsToHTML(sortedRes, false)));
+        });
+      }
     }
   });
 });
@@ -226,18 +243,24 @@ app.post('/signup', function(req, res) {
 // -----------------------------------------------------------------------------
 // send signup.html file to webpage
 app.get('/login', function(req, res) {
-  var options = {
-    root: __dirname + '/'
-  };
+  if (req.loggedInUser) {
+    // HTTP status code 401 means Unauthorized
+    res.redirect('/?page=1&posts=25&error=loggedIn');
+  }
+  else {
+    var options = {
+      root: __dirname + '/'
+    };
 
-  res.sendFile('login.html', options, function(err) {
-    if (err) {
-      res.status(500).send('<h2>ERROR!</h2>' + err);
-    }
-    else {
-      return;
-    }
-  });
+    res.sendFile('login.html', options, function(err) {
+      if (err) {
+        res.status(500).send('<h2>ERROR!</h2>' + err);
+      }
+      else {
+        return;
+      }
+    });
+  }
 });
 
 
@@ -280,17 +303,15 @@ app.get('/post', function(req, res) {
       res.send('<h2>ERROR: no post found!</h2>' + err);
     }
     else {
-      //console.log(post);
       //get me the comments, call back call this shit below
-      //redditAPI.getCommentsByPost(postId, 3, function(err, results){
       redditAPI.getCommentsByPost(postId, 3, function(err, results){
         if (err) {
           console.log(err);
         }
         else {
-          //console.log(JSON.stringify(results, null, 4));
-          //console.log(results, null, 4);
-          res.send(headfoot(postToHTML(post, results)));
+          res.send(headfoot(postToHTML(post, results, function(postId) {
+              req.postId = postId; // to be used at some pint with a hidden form field
+          })));
         }
       });
     }
@@ -365,7 +386,7 @@ app.post('/newcomment', function(req, res) {
 
     redditAPI.createComment({
       text: newComment,
-      userId: 1,
+      userId: req.loggedInUser,
       postId: postId
     }, function(err, comment) {
       //console.log(comment);
@@ -382,6 +403,35 @@ app.post('/newcomment', function(req, res) {
 });
 
 
+// Create or Update Vote
+// -----------------------------------------------------------------------------
+//  take the input from clicking the up or down vote buttons form on the single post page. If successful, redirect/refresh single post page
+app.post('/vote', function(req, res) {
+  if (!req.loggedInUser) {
+    // HTTP status code 401 means Unauthorized
+    res.status(401).send('You need to be <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/login">logged in to comment on a post!</a>');
+  }
+  else {
+    var newVote = req.body.vote;
+    // Need postId from the url of the page where the comment was posted; get url from referer in header, split it at the = of the query string and convert to a number
+    var refererURL = req.headers.referer.split('=');
+    var postId = Number(refererURL[1]);
+
+    redditAPI.createOrUpdateVote({
+      vote: newVote,
+      userId: req.loggedInUser,
+      postId: postId
+    }, function(err, vote) {
+      if (err) {
+        res.send('<h2>ERROR: vote could not be created!</h2>' + err);
+      }
+      else {
+        // redrect to single post page on successful submission
+        res.redirect(`/post?postid=${vote[0].postId}`);
+      }
+    });
+  }
+});
 
 
 // -----------------------------------------------------------------------------

@@ -1,0 +1,51 @@
+$rOrange: rgb(255, 87, 0);
+$colTwo: rgb(248,236,224);
+$colWhite: rgb(255, 255, 255);
+$colSuccessL: rgb(169, 245, 169);
+$colSuccessD: rgb(1, 223, 116);
+
+body {
+    background-color: $colTwo;
+}
+header, footer {
+    background-color: $rOrange;
+    color: $colWhite;
+    text-align: center;
+    padding: 1px 0px 10px;
+}
+nav {
+    text-transform: uppercase;
+    margin-top: 10px;
+    a {
+        color: $colWhite;
+        text-decoration: none;
+        padding: 10px;
+    }
+}
+.content-item-title {
+    margin-bottom: 0px;
+    a {
+       color: $rOrange;
+       text-decoration:none; 
+    }
+}
+#contents p {
+    margin-top: 0px;
+}
+li.content-item {
+    list-style-type: none;
+}
+#hpMsg {
+    background-color: $colSuccessL;
+    border: 1px solid $colSuccessD;
+    padding: 20px;
+    margin: 10px 0px;
+}
+button {
+    border: medium none;
+    background-color: $rOrange;
+    padding: 10px 20px;
+    color: $colWhite;
+    text-transform: uppercase;
+    margin-top: 10px;
+}
