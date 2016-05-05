@@ -1,3 +1,31 @@
 body {
     background-color: #F8ECE0;
 }
+header, footer {
+    background-color: rgb(255, 87, 0);
+    color: #fff;
+    text-align: center;
+    padding: 1px 0px 10px;
+}
+nav {
+    text-transform: uppercase;
+    margin-top: 10px;
+}
+nav a {
+    color: rgb(255, 255, 255);
+    text-decoration: none;
+    padding: 10px;
+}
+.content-item-title {
+    margin-bottom: 0px;
+}
+.content-item-title a {
+   color: rgb(255, 87, 0);
+   text-decoration:none; 
+}
+#contents p {
+    margin-top: 0px;
+}
+li.content-item {
+    list-style-type: none;
+}

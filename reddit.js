@@ -1,7 +1,7 @@
 var bcrypt = require('bcrypt');
 var HASH_ROUNDS = 10;
 var secureRandom = require('secure-random');
-// function to create a big random string
+// function to create a big random string as a session token
 function createSessionToken() {
   return secureRandom.randomArray(100).map(code => code.toString(36)).join('');
 }
@@ -86,6 +86,17 @@ module.exports = function RedditAPI(conn) {
         }
         else {
           callback(null, token);
+        }
+      });
+    },
+    
+    getUserFromSession: function(token, callback) {
+      conn.query('SELECT * FROM `sessions` WHERE `sessionId`= ?', [token], function(err, user) {
+        if (user.length > 0) {
+          callback(null, user[0].userId); // return user id if a sessionId exists
+        }
+        else {
+          callback(false);
         }
       });
     },
@@ -237,6 +248,7 @@ module.exports = function RedditAPI(conn) {
         ORDER BY p.createdAt DESC
         `, [postId],
         function(err, results) {
+                    
           if (err) {
             callback(err);
           }

@@ -6,13 +6,15 @@ var express = require('express');
 var app = express();
 var cookieParser = require('cookie-parser');
 app.use(cookieParser());
+app.use(checkLoginToken);
 var bodyParser = require('body-parser');
 app.use(bodyParser());
-// install then use express cookie-parser to parse cookie info instead of receiving a single long string
-var cookieParser = require('cookie-parser');
-app.use(cookieParser());
+app.use(express.static('css'));
 
-// create a connection to our Cloud9 server
+// load newCommentForm as a module
+var ncf = require('./newCommentForm.js');
+
+// Connection to Cloud9 (MySQL) server
 var connection = mysql.createConnection({
   host     : 'localhost',
   user     : 'molecularcode',
@@ -21,30 +23,43 @@ var connection = mysql.createConnection({
   debug: false
 });
 
-
-app.use(express.static('css'));
-
 // load our API and pass it the connection
 var reddit = require('./reddit');
 var redditAPI = reddit(connection);
 
-// load newCommentForm as a module
-var ncf = require('./newCommentForm.js');
 
+// -----------------------------------------------------------------------------
+// Middleware
+// -----------------------------------------------------------------------------
 // .use creates middware to process the get request and do something to it, in this case show header for all requests
 app.use(function(req, res, next){
-  console.log(req.headers);
+  //console.log(req.loggedInUser);
   // next REQUIRED so that the middleware doesn't block the stream and allows the request to move on
   next();
 });
 
-// parse cookie
-app.use(function(req, res, next){
-  //console.log(req.cookies);
-  next();
-});
+// Middleware to check is a SESSION cookie exists and mark user as logged-in if so
+function checkLoginToken(req, res, next) {
+  // check if there's a SESSION cookie...
+  if (req.cookies.SESSION) {
+    redditAPI.getUserFromSession(req.cookies.SESSION, function(err, user) {
+      // if we get back a user object, set it on the request. From now on, this request looks like it was made by this user as far as the rest of the code is concerned
+      if (user) {
+        req.loggedInUser = user;
+      }
+      next();
+    });
+  }
+  else {
+    // if no SESSION cookie, move forward
+    next();
+  }
+}
 
 
+// -----------------------------------------------------------------------------
+// App functions
+// -----------------------------------------------------------------------------
 // Show a header and footer above and below the page content. MUST wrap every send and redirect in this function
 function headfoot(page){
   return `
@@ -52,17 +67,17 @@ function headfoot(page){
     <link rel="stylesheet" type="text/css" href="style.css">
   </head>
   <body>
-    <header style="background-color: rgb(255, 87, 0); color: #fff; text-align:center; padding: 1px 0px 10px ">
+    <header>
       <h1>Reddit Clone</h1>
-      <nav style="text-transform: uppercase; margin-top: 10px;">
-        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/?page=1&posts=25" style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Homepage</a>
-        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/newpost"  style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Create New Post</a>
-        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/login"  style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Login</a>
-        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/signup"  style="color: rgb(255, 255, 255); text-decoration: none; padding: 10px;">Sign Up</a>
+      <nav>
+        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/?page=1&posts=25">Homepage</a>
+        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/newpost">Create New Post</a>
+        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/login">Login</a>
+        <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/signup">Sign Up</a>
       </nav>
     </header>
     ${page}
-    <footer style="background-color: rgb(255, 87, 0); color: #fff; text-align:center; padding: 1px 0px 10px;"><h2>FOOTER</h2></footer>
+    <footer><h2>FOOTER</h2></footer>
     </body>
   `;
 }
@@ -71,14 +86,13 @@ function headfoot(page){
 function postsToHTML(result) {
   var htmlStart = '<div id="contents"> <h1>Reddit Clone Homepage</h1> <ul class="contents-list">';
   var htmlEnd = '</ul> </div>';
-  //console.log(result);
   var postHTML = result.map(function(res){
     return (
       // post literial using ` and ${} to avoid having to close quotes every time switching from html to JS variable
-      `<li class="content-item" style="list-style-type: none;">
-        <h2 class="content-item__title" style="margin-bottom: 0px;"><a href="${res.url}" style="color: rgb(255, 87, 0); text-decoration:none;">${res.title}</a></h2>
-        <p style="margin-top: 0px;">Created by <b>${res.user.username}</b> ${moment(res.createdAt).fromNow()}</p>
-        <p style="margin-top: 0px;">${res.content}</p>
+      `<li class="content-item">
+        <h2 class="content-item-title"><a href="${res.url}">${res.title}</a></h2>
+        <p>Created by <b>${res.user.username}</b> ${moment(res.createdAt).fromNow()}</p>
+        <p>${res.content}</p>
       </li>`
     );
   });
@@ -91,8 +105,8 @@ function postToHTML(res, allComments) {
   //console.log(allComments);
   return (
     `<div id="contents"> <h1>${res.title}</h1>
-      <p style="margin-top: 0px;">Created by <b>${res.user.username}</b> ${moment(res.createdAt).fromNow()}</p>
-      <p style="margin-top: 0px;">${res.content}</p>
+      <p>Created by <b>${res.user.username}</b> ${moment(res.createdAt).fromNow()}</p>
+      <p>${res.content}</p>
       ${ncf}
       <div class="comments">
         ${CommentList(allComments)}
@@ -249,7 +263,7 @@ app.post('/login', function(req, res) {
         }
         else {
           res.cookie('SESSION', token); // the secret token is now in the user's cookies!
-          res.redirect('/login');
+          res.redirect('/?page=1&posts=25');
         }
       });
     }
@@ -307,25 +321,31 @@ app.get('/newpost', function(req, res) {
 // -----------------------------------------------------------------------------
 // take the inputs from filling in and submitting the newPostForm.html and create a new post. If successful, redirect to the homepage page showing 5 most recent posts
 app.post('/newpost', function(req, res) {
-  var newTitle = req.body.title;
-  var newURL = req.body.url;
-  var newContent = req.body.content;
-  redditAPI.createPost({
-    title: newTitle,
-    url: newURL,
-    content: newContent,
-    userId: 1,
-    subredditId: 8
-  }, function(err, post) {
-    //console.log(post);
-    if (err) {
-      res.send('<h2>ERROR: post not created!</h2>' + err);
-    }
-    else {
-      // redrect to single post page on successful submission
-      res.redirect(`/post?postid=${post.id}`);
-    }
-  });
+  if (!req.loggedInUser) {
+    // HTTP status code 401 means Unauthorized
+    res.status(401).send('You need to be <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/login">logged in to create a new post!</a>');
+  }
+  else {
+    var newTitle = req.body.title;
+    var newURL = req.body.url;
+    var newContent = req.body.content;
+    redditAPI.createPost({
+      title: newTitle,
+      url: newURL,
+      content: newContent,
+      userId: req.loggedInUser,
+      subredditId: 8
+    }, function(err, post) {
+      //console.log(post);
+      if (err) {
+        res.send('<h2>ERROR: post not created!</h2>' + err);
+      }
+      else {
+        // redrect to single post page on successful submission
+        res.redirect(`/post?postid=${post.id}`);
+      }
+    });
+  }
 });
 
 
@@ -333,27 +353,32 @@ app.post('/newpost', function(req, res) {
 // -----------------------------------------------------------------------------
 //  take the input from filling in the comment form on the single comment page (created by ncf - new comment form module). If successful, redirect/refresh single post page
 app.post('/newcomment', function(req, res) {
-  var newComment = req.body.comment;
-  
-  // Need to get the postId from the url of the page where the comment was posted; get url from referer in header, split it at the = of the query string and convert to a number
-  var refererURL = req.headers.referer.split('='); 
-  var postId = Number(refererURL[1]);
-  
-  redditAPI.createComment({
-    text: newComment,
-    userId: 1,
-    postId: postId
-  }, function(err, comment) {
-    //console.log(comment);
-    if (err) {
-      res.send('<h2>ERROR: comment could not be created!</h2>' + err);
-    }
-    else {
-      // redrect to single post page on successful submission
+  if (!req.loggedInUser) {
+    // HTTP status code 401 means Unauthorized
+    res.status(401).send('You need to be <a href="https://dc-day14-reddit-nodejs-api-molecularcode-1.c9users.io/login">logged in to comment on a post!</a>');
+  }
+  else {
+    var newComment = req.body.comment;
+    // Need postId from the url of the page where the comment was posted; get url from referer in header, split it at the = of the query string and convert to a number
+    var refererURL = req.headers.referer.split('=');
+    var postId = Number(refererURL[1]);
+
+    redditAPI.createComment({
+      text: newComment,
+      userId: 1,
+      postId: postId
+    }, function(err, comment) {
       //console.log(comment);
-      res.redirect(`/post?postid=${comment.postId}`);
-    }
-  });
+      if (err) {
+        res.send('<h2>ERROR: comment could not be created!</h2>' + err);
+      }
+      else {
+        // redrect to single post page on successful submission
+        //console.log(comment);
+        res.redirect(`/post?postid=${comment.postId}`);
+      }
+    });
+  }
 });
 
 
