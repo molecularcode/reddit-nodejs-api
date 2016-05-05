@@ -21,6 +21,9 @@ var connection = mysql.createConnection({
   debug: false
 });
 
+
+app.use(express.static('css'));
+
 // load our API and pass it the connection
 var reddit = require('./reddit');
 var redditAPI = reddit(connection);
@@ -35,9 +38,9 @@ app.use(function(req, res, next){
   next();
 });
 
-// parse cookies
+// parse cookie
 app.use(function(req, res, next){
-  console.log(req.cookies);
+  //console.log(req.cookies);
   next();
 });
 
@@ -45,6 +48,10 @@ app.use(function(req, res, next){
 // Show a header and footer above and below the page content. MUST wrap every send and redirect in this function
 function headfoot(page){
   return `
+  <head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+  </head>
+  <body>
     <header style="background-color: rgb(255, 87, 0); color: #fff; text-align:center; padding: 1px 0px 10px ">
       <h1>Reddit Clone</h1>
       <nav style="text-transform: uppercase; margin-top: 10px;">
@@ -56,6 +63,7 @@ function headfoot(page){
     </header>
     ${page}
     <footer style="background-color: rgb(255, 87, 0); color: #fff; text-align:center; padding: 1px 0px 10px;"><h2>FOOTER</h2></footer>
+    </body>
   `;
 }
 
@@ -228,15 +236,22 @@ app.post('/login', function(req, res) {
   redditAPI.verifyLogin({
     username: uname,
     password: pwd
-  }, function(err, result) {
+  }, function(err, user) {
     if (err) {
-      res.send('<h2>ERROR: username or password does not exist!</h2>' + err);
+      res.status(401).send(err.message);
     }
     else {
-      // redrect to homepage on successful submission
-      //res.redirect(`/?page=1&posts=25`);
-      // return username
-      res.send(result);
+      // password is OK!
+      // create a token and send it to the user in his cookies, then add to sessions table
+      redditAPI.createSession(user.id, function(err, token) {
+        if (err) {
+          res.status(500).send('an error occurred. please try again later!');
+        }
+        else {
+          res.cookie('SESSION', token); // the secret token is now in the user's cookies!
+          res.redirect('/login');
+        }
+      });
     }
   });
 });

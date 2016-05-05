@@ -1,10 +1,14 @@
 var bcrypt = require('bcrypt');
 var HASH_ROUNDS = 10;
+var secureRandom = require('secure-random');
+// function to create a big random string
+function createSessionToken() {
+  return secureRandom.randomArray(100).map(code => code.toString(36)).join('');
+}
 
 module.exports = function RedditAPI(conn) {
   return {
     createUser: function(user, callback) {
-      
       // first we have to hash the password...
       bcrypt.hash(user.password, HASH_ROUNDS, function(err, hashedPassword) {
         if (err) {
@@ -61,7 +65,7 @@ module.exports = function RedditAPI(conn) {
           callback(new Error('username or password incorrect')); // in this case the user does not exists
         }
         else {
-          var user = result[0].username;
+          var user = result[0];
           bcrypt.compare(exUser.password, result[0].password, function(err, resultp) {
             if (resultp === true) { // let's be extra safe here
               callback(null, user);
@@ -70,6 +74,18 @@ module.exports = function RedditAPI(conn) {
               callback(new Error('username or password incorrect')); // in this case the password is wrong, but we reply with the same error
             }
           });
+        }
+      });
+    },
+    
+    createSession: function(userId, callback) {
+      var token = createSessionToken();
+      conn.query('INSERT INTO sessions SET userId = ?, sessionId = ?', [userId, token], function(err, result) {
+        if (err) {
+          callback(err);
+        }
+        else {
+          callback(null, token);
         }
       });
     },
